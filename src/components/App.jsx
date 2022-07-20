@@ -1,75 +1,54 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 
 import { Button } from './Button/Button';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { Searchbar } from './SearchBar/SearchBar';
 import { Loader } from './Loader/Loader';
+import { Modal } from './Modal/Modal';
+import { fetchImgs, getIsLastPage } from 'services/api-pixabay';
 
 import { GlobalStyle } from 'styles/GlobalStyle';
 import { Container } from './Container.styled';
 
-import { fetchImgs, isLastPage } from 'services/api-pixabay';
-import { Modal } from './Modal/Modal';
+export const App = () => {
+  const [images, setImages] = useState([]);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [error, setError] = useState('');
+  const [scrollHeight, setScrollHeight] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLastPage, setIsLastPage] = useState(false);
+  const [largeImageURL, setLargeImageURL] = useState('');
+  const [tags, setTags] = useState('');
 
-// const STATUS = {
-//   IDLE: 'idle',
-//   PENDING: 'pending',
-//   RESOLVED: 'resolved',
-//   REJECTED: 'rejected',
-// };
+  useEffect(() => {
+    fetchNewImgs(query, page);
+  }, [page, query]);
 
-export class App extends Component {
-  state = {
-    images: [],
-    query: '',
-    page: 1,
-    isLastPage: false,
-    error: '',
-    l: 0,
-    isLoading: false,
-    showModal: false,
-    largeImageURL: '',
-    tags: '',
-    // status: STATUS.IDLE,
+  useEffect(() => {
+    scrollToNewImg(scrollHeight);
+  }, [scrollHeight]);
+
+  const handleLoadMore = () => {
+    setPage(prevPage => prevPage + 1);
+    setScrollHeight(document.documentElement.scrollHeight - 150);
   };
 
-  // async componentDidMount() {
-  //   this.fetchNewImgs();
-  // }
-
-  componentDidUpdate(_, prevState) {
-    const { page, query } = this.state;
-
-    if (page !== prevState.page || query !== prevState.query) {
-      this.fetchNewImgs(query, page);
-    }
-    this.scrollToNewImg(this.state.l);
-  }
-
-  handleLoadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-      l: document.documentElement.scrollHeight - 150,
-    }));
-  };
-
-  handleQuery = query => {
-    this.setState(prevState => {
-      if (prevState.query !== query) {
-        return {
-          query,
-          page: 1,
-          images: [],
-          error: '',
-          showModal: false,
-        };
+  const handleQuery = query => {
+    setQuery(prevQuery => {
+      if (prevQuery !== query) {
+        setPage(1);
+        setImages([]);
+        setError('');
+        setScrollHeight(0);
+        return query;
       }
     });
   };
 
-  fetchNewImgs = async (query = '', page = 1) => {
+  const fetchNewImgs = async (query = '', page = 1) => {
     try {
-      this.setState({ isLoading: true });
+      setIsLoading(true);
 
       const respImgs = await fetchImgs(query, page);
 
@@ -86,69 +65,54 @@ export class App extends Component {
         })
       );
 
-      this.setState(prevState => ({
-        isLastPage: isLastPage(),
-        images: [...prevState.images, ...newImgs],
-      }));
+      setImages(prevImgs => [...prevImgs, ...newImgs]);
+      setIsLastPage(getIsLastPage());
     } catch (error) {
-      this.setState({
-        error: error.message,
-      });
+      setError(error.message);
     } finally {
-      this.setState({
-        isLoading: false,
-      });
+      setIsLoading(false);
     }
   };
 
-  openModal = (largeImageURL, tags) => {
-    this.setState({ largeImageURL, tags, showModal: true });
+  const openModal = (largeImageURL, tags) => {
+    setLargeImageURL(largeImageURL);
+    setTags(tags);
   };
 
-  closeModal = () => {
-    this.setState({ showModal: false });
+  const closeModal = () => {
+    setLargeImageURL('');
   };
 
-  scrollToNewImg = l => {
+  const scrollToNewImg = scrollHeight => {
     window.scrollTo({
-      // top: document.documentElement.scrollHeight,
-      top: l,
+      top: scrollHeight,
       behavior: 'smooth',
     });
   };
 
-  render() {
-    const { isLastPage, isLoading, images, error, largeImageURL, tags } =
-      this.state;
-
-    return (
-      <>
-        <GlobalStyle />
-        <Container>
-          <Searchbar handleQuery={this.handleQuery} />
-          {error !== '' && <p className="message">{error}</p>}
-          {error === '' && (
-            <ImageGallery images={images} openModal={this.openModal} />
-          )}
-          {isLoading && <Loader />}
-          {!isLoading &&
-            error === '' &&
-            (isLastPage ? (
-              <p className="noContent">No more content</p>
-            ) : (
-              images.length !== 0 && (
-                <Button handleClick={this.handleLoadMore} />
-              )
-            ))}
-          {this.state.showModal && (
-            <Modal
-              onClose={this.closeModal}
-              largeImageURL={largeImageURL}
-              tags={tags}
-            />
-          )}
-        </Container>
-      </>
-    );
-  }
-}
+  return (
+    <>
+      <GlobalStyle />
+      <Container>
+        <Searchbar handleQuery={handleQuery} />
+        {error !== '' && <p className="message">{error}</p>}
+        {error === '' && <ImageGallery images={images} openModal={openModal} />}
+        {isLoading && <Loader />}
+        {!isLoading &&
+          error === '' &&
+          (isLastPage ? (
+            <p className="noContent">No more content</p>
+          ) : (
+            images.length !== 0 && <Button handleClick={handleLoadMore} />
+          ))}
+        {largeImageURL && (
+          <Modal
+            onClose={closeModal}
+            largeImageURL={largeImageURL}
+            tags={tags}
+          />
+        )}
+      </Container>
+    </>
+  );
+};

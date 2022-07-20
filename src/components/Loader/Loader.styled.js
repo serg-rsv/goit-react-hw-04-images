@@ -4,8 +4,8 @@ export const LoaderStyled = styled.div`
   position: relative;
   margin-left: auto;
   margin-right: auto;
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
 
   & span {
     position: absolute;
@@ -20,11 +20,11 @@ export const LoaderStyled = styled.div`
       position: absolute;
       right: 0;
       top: calc(50% - 1.5px);
-      width: 5px;
-      height: 1px;
+      width: 4px;
+      height: 4px;
       background: #3f51b5;
       border-radius: 50%;
-      box-shadow: 0 0 1px #3f51b5, 0 0 4px #3f51b5, 0 0 5px #3f51b5;
+      box-shadow: 0 0 1px #3f51b5, 0 0 4px #3f51b5, 0 0 4px #3f51b5;
       transform: scale(0.4);
       animation: spin 2s linear infinite;
       animation-delay: calc(0.1s * var(--i));
