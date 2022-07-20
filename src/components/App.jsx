@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 import { Button } from './Button/Button';
 import { ImageGallery } from './ImageGallery/ImageGallery';
@@ -11,6 +11,8 @@ import { GlobalStyle } from 'styles/GlobalStyle';
 import { Container } from './Container.styled';
 
 export const App = () => {
+  const isMounted = useRef(false);
+
   const [images, setImages] = useState([]);
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -22,12 +24,16 @@ export const App = () => {
   const [tags, setTags] = useState('');
 
   useEffect(() => {
-    fetchNewImgs(query, page);
+    if (isMounted.current) {
+      fetchNewImgs(query, page);
+    }
+
+    isMounted.current = true;
   }, [page, query]);
 
   useEffect(() => {
     scrollToNewImg(scrollHeight);
-  }, [scrollHeight]);
+  }, [scrollHeight, images]);
 
   const handleLoadMore = () => {
     setPage(prevPage => prevPage + 1);
